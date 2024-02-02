@@ -93,12 +93,17 @@ async def read_own_items(
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
-@app.post("/users/", response_model=Users)
+@app.post("/users/", response_model=dict)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+    user = crud.create_user(db=db, user=user)
+    return {
+        "status":"200",
+        "msg":"User Created",
+        "user":user.username
+    }
 
 
 @app.get("/users/", response_model=List[Users])
@@ -115,7 +120,7 @@ def read_user(username: str, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/items/", response_model=Item)
+@app.post("/users/{user_id}/items/", response_model=dict) #response_model=Item before
 def create_item_for_user(
     user_id: int, 
     item: ItemCreate, 
@@ -124,7 +129,12 @@ def create_item_for_user(
 ):
     print("current_user_id =",current_user.id, "user_id =",user_id)
     if current_user.id == user_id:
-        return crud.create_user_item(db=db, item=item, user_id=user_id)
+        item_create = crud.create_user_item(db=db, item=item, user_id=user_id)
+        return {
+            "status":"200",
+            "msg":"User Created",
+            "item":item_create.title
+        }
     else:
         raise HTTPException(status_code=401, detail="Authenticated user not as the same as input user id parameter")
 
