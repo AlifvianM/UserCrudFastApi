@@ -1,0 +1,46 @@
+version: '3.7'
+
+services:
+  api:
+    build: ./app/
+    container_name: api_service
+    command: bash -c "alembic upgrade head && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+    healthcheck:
+      # test: ["CMD-SHELL", "pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -h postgres -p 5432 -U marco -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./app/:/app_backend/
+      # - ./alembic.ini:/app_backend/
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: marco
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: appdb
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    restart: always
+    volumes:
+      - postgres_data_db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - backend
+
+volumes:
+  postgres_data_db:
+
+networks:
+  backend:
+    driver: bridge
